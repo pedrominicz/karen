@@ -1,0 +1,18 @@
+#!/bin/sh
+
+trap clean 0 1 2 3 6
+
+clean() {
+    rm -f Lex.hs Parse.hs
+}
+
+alex Lex.x || exit
+happy Parse.y || exit
+
+runhaskell Test.hs || exit
+
+case "$1" in
+    *.hs)       ghci "$1" ;;
+    *.pl)       swipl "$1" ;;
+    *)          ghci Test.hs ;;
+esac
