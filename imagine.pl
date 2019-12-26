@@ -20,6 +20,10 @@ no :- refl(a,b).
 
 test(cons(a,_)).
 
+zeros(0).
+zeros(X) :- zeros(X).
+zeros(impossible).
+
 % ?- refl(a,X).
 %
 % query_X <- 1.

@@ -10,12 +10,10 @@ import Control.Applicative
 import Control.Monad.State
 import qualified Data.IntMap as IM
 
-type UVar = Int
-
 -- Unification terms. Not to be confused with syntactic terms.
 data UTerm
-    = UTerm Name [UTerm]
-    | UVar UVar
+    = UTerm String [UTerm]
+    | UVar Int
     deriving (Eq, Show)
 
 type Substitution = IM.IntMap UTerm
@@ -45,22 +43,20 @@ fresh = do
     modify (\s -> s { next = v + 1 })
     return $ UVar v
 
-lookupUVar :: Monad m => UVar -> UnifyT m (Maybe UTerm)
+lookupUVar :: Monad m => Int -> UnifyT m (Maybe UTerm)
 lookupUVar v = gets (IM.lookup v . bindings)
 
-bind :: Monad m => UVar -> UTerm -> UnifyT m UTerm
+bind :: Monad m => Int -> UTerm -> UnifyT m UTerm
 bind v t = do
     modify (\s -> s { bindings = IM.insert v t (bindings s) })
     return t
 
-occurs :: UVar -> UTerm -> Bool
+occurs :: Int -> UTerm -> Bool
 occurs v (UTerm t ts) = any (occurs v) ts
 occurs v (UVar v')    = v == v'
 
 apply :: MonadPlus m => UTerm -> UnifyT m UTerm
-apply (UTerm t ts) = do
-    ts <- traverse apply ts
-    return $ UTerm t ts
+apply (UTerm t ts) = UTerm t <$> traverse apply ts
 apply (UVar v) = do
     t <- lookupUVar v
     case t of

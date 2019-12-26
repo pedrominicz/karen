@@ -54,14 +54,14 @@ test2 = isJust . eval $ do
     apply b
 
 test3 :: Bool
-test3 = not . isJust . eval $ do
+test3 = isNothing . eval $ do
     x <- fresh
     let a = term "a"
     x === a [x, x]
     apply x
 
 test4 :: Bool
-test4 = not . isJust . eval $ do
+test4 = isNothing . eval $ do
     x <- fresh
     y <- fresh
     let a = term "a"
