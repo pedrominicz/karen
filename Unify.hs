@@ -7,11 +7,8 @@ module Unify where
 import Syntax
 
 import Control.Applicative
-import Control.Monad.Identity
 import Control.Monad.State
-import Control.Monad.Trans.Maybe
 import qualified Data.IntMap as IM
-import qualified Data.IntSet as IS
 
 type UVar = Int
 
@@ -19,7 +16,7 @@ type UVar = Int
 data UTerm
     = UTerm Name [UTerm]
     | UVar UVar
-    deriving Show
+    deriving (Eq, Show)
 
 type Substitution = IM.IntMap UTerm
 
@@ -51,8 +48,10 @@ fresh = do
 lookupUVar :: Monad m => UVar -> UnifyT m (Maybe UTerm)
 lookupUVar v = gets (IM.lookup v . bindings)
 
-bind :: Monad m => UVar -> UTerm -> UnifyT m ()
-bind v t = modify (\s -> s { bindings = IM.insert v t (bindings s) })
+bind :: Monad m => UVar -> UTerm -> UnifyT m UTerm
+bind v t = do
+    modify (\s -> s { bindings = IM.insert v t (bindings s) })
+    return t
 
 occurs :: UVar -> UTerm -> Bool
 occurs v (UTerm t ts) = any (occurs v) ts
@@ -69,7 +68,6 @@ apply (UVar v) = do
             guard $ not (occurs v t)
             t <- apply t
             bind v t
-            return t
         Nothing -> return $ UVar v
 
 unify :: MonadPlus m => UTerm -> UTerm -> UnifyT m UTerm
@@ -77,14 +75,9 @@ unify t t' = do
     t  <- apply t
     t' <- apply t'
     case (t, t') of
-        (UVar v, UVar v')
-            | v == v' -> return $ UVar v
-        (UVar v, t) -> do
-            bind v t
-            return $ UVar v
-        (t, UVar v) -> do
-            bind v t
-            return $ UVar v
+        (t, t') | t == t' -> return t
+        (UVar v, t) -> bind v t
+        (t, UVar v) -> bind v t
         (t, t') -> match t t'
 
 zipExact :: Alternative f => [a] -> [b] -> f [(a, b)]
