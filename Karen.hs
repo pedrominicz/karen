@@ -33,7 +33,7 @@ apply (UVar v) = do
         Nothing -> return $ UVar v
 
 unify :: Substitution -> UTerm -> UTerm -> Maybe Substitution
-unify s t t' = execStateT (go t t' >>= apply) s
+unify s t t' = execStateT (go t t') s
     where
     go :: UTerm -> UTerm -> Unify UTerm
     go t t' = do
