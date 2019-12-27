@@ -6,9 +6,12 @@ import qualified Data.IntMap as IM
 data UTerm
     = UVar Int
     | UTerm String [UTerm]
-    deriving Eq
+    deriving (Eq, Show)
 
 type Substitution = IM.IntMap UTerm
+
+empty :: IM.IntMap UTerm
+empty = IM.empty
 
 type Unify a = StateT Substitution Maybe a
 
