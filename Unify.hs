@@ -1,4 +1,4 @@
-module Unify (Subst, UTerm(..), empty, unify) where
+module Unify (Subst, UTerm(..), apply, empty, unify) where
 
 import Control.Monad.State
 import qualified Data.IntMap as IM
@@ -61,7 +61,7 @@ unify s t t' = execStateT (go t t') s
     ts <- zipExact ts ts'
     ts <- traverse (uncurry go) ts
     return $ UTerm t ts
-  match t t' = undefined -- This case will never be reached.
+  match t t' = error "Unify.match: unreachable"
 
   zipExact [] []         = return []
   zipExact (x:xs) (y:ys) = ((x, y) :) <$> zipExact xs ys
