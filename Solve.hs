@@ -29,15 +29,18 @@ unfreeze (Var v) = do
 
 {-
 
-λ> a = Clause (Term "a" []) []
+λ> v = Var ""
+λ> a = Clause (Term "a" []) [v,v,v]
 λ> b = Clause (Term "b" []) []
-λ> evalStateT (branch [a,a,b,a] (UTerm "b" [])) (Binding empty M.empty 0)
-[()]
 λ> evalStateT (branch [a,a,b,a] (UTerm "a" [])) (Binding empty M.empty 0)
-[(),(),()]
+[[UVar 0,UVar 0,UVar 0],[UVar 0,UVar 0,UVar 0],[UVar 0,UVar 0,UVar 0]]
+λ> evalStateT (branch [a,a,b,a] (UTerm "b" [])) (Binding empty M.empty 0)
+[[]]
+λ> evalStateT (branch [a,a,b,a] (UTerm "c" [])) (Binding empty M.empty 0)
+[]
 
 -}
-branch :: [Clause] -> UTerm -> Solve ()
+branch :: [Clause] -> UTerm -> Solve [UTerm]
 branch cs t = do
   -- This should be the only place were non-determinism happen.
   Clause t' ts <- lift cs
@@ -45,7 +48,7 @@ branch cs t = do
   s  <- gets subst
   t' <- unfreeze t'
   case unify s t t' of
-    Just s  -> return ()
+    Just s  -> traverse unfreeze ts
     Nothing -> mzero
 
 type Solution = M.Map String Term
