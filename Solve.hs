@@ -7,6 +7,8 @@ import Control.Monad.State
 import Data.List.NonEmpty
 import qualified Data.Map as M
 
+import Debug.Trace
+
 data Binding = Binding
   -- { rules :: [Clause]
   { subst :: Subst
@@ -29,17 +31,18 @@ unfreeze (Var v) = do
 
 {-
 
-λ> v = Var ""
-λ> a = Clause (Term "a" []) [v,v,v]
+λ> a = Clause (Term "a" []) [Term "b" []]
 λ> b = Clause (Term "b" []) []
-λ> evalStateT (branch [a,a,b,a] (UTerm "a" [])) (Binding empty M.empty 0)
-[[UVar 0,UVar 0,UVar 0],[UVar 0,UVar 0,UVar 0],[UVar 0,UVar 0,UVar 0]]
-λ> evalStateT (branch [a,a,b,a] (UTerm "b" [])) (Binding empty M.empty 0)
-[[]]
-λ> evalStateT (branch [a,a,b,a] (UTerm "c" [])) (Binding empty M.empty 0)
-[]
+λ> evalStateT (find [a,b] [(UTerm "a" [])]) (Binding empty M.empty 0)
+[()]
 
 -}
+find :: [Clause] -> [UTerm] -> Solve ()
+find cs (t:ts) = do
+  ts' <- branch cs t
+  find cs (ts ++ traceShowId ts')
+find cs [] = return ()
+
 branch :: [Clause] -> UTerm -> Solve [UTerm]
 branch cs t = do
   -- This should be the only place were non-determinism happen.
