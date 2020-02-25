@@ -3,18 +3,18 @@ module Solve where
 import Syntax
 import Unify
 
-import Control.Monad.Logic
 import Control.Monad.State
+import Data.List.NonEmpty
 import qualified Data.Map as M
 
 data Binding = Binding
-  { rules :: [Clause]
-  , subst :: Subst
+  -- { rules :: [Clause]
+  { subst :: Subst
   , local :: M.Map String Int
   , next  :: Int
   }
 
-type Solve a = LogicT (State Binding) a
+type Solve a = StateT Binding [] a
 
 unfreeze :: Term -> Solve UTerm
 unfreeze (Term t ts) = UTerm t <$> traverse unfreeze ts
@@ -27,7 +27,28 @@ unfreeze (Var v) = do
       modify $ \s' -> s' { local = M.insert v v' s, next = v' + 1 }
       return $ UVar v'
 
+{-
+
+λ> a = Clause (Term "a" []) []
+λ> b = Clause (Term "b" []) []
+λ> evalStateT (branch [a,a,b,a] (UTerm "b" [])) (Binding empty M.empty 0)
+[()]
+λ> evalStateT (branch [a,a,b,a] (UTerm "a" [])) (Binding empty M.empty 0)
+[(),(),()]
+
+-}
+branch :: [Clause] -> UTerm -> Solve ()
+branch cs t = do
+  -- This should be the only place were non-determinism happen.
+  Clause t' ts <- lift cs
+  modify $ \s -> s { local = M.empty }
+  s  <- gets subst
+  t' <- unfreeze t'
+  case unify s t t' of
+    Just s  -> return ()
+    Nothing -> mzero
+
 type Solution = M.Map String Term
 
-solve :: [Clause] -> [Term] -> [Solution]
+solve :: [Clause] -> Term -> [Solution]
 solve rules ts = undefined
