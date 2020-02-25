@@ -1,3 +1,7 @@
+### Overview
+
+Currently, a simple parser for a subset of Prolog is implemented.
+
 ### Useful Resources
 
 http://propella.blogspot.com/2009/04/prolog-in-haskell.html

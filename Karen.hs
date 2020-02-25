@@ -8,12 +8,12 @@ data UTerm
     | UTerm String [UTerm]
     deriving (Eq, Show)
 
-type Substitution = IM.IntMap UTerm
+type Subst = IM.IntMap UTerm
 
-empty :: IM.IntMap UTerm
+empty :: Subst
 empty = IM.empty
 
-type Unify a = StateT Substitution Maybe a
+type Unify a = StateT Subst Maybe a
 
 bind :: Int -> UTerm -> Unify UTerm
 bind v t = do
@@ -35,7 +35,13 @@ apply (UVar v) = do
             bind v t
         Nothing -> return $ UVar v
 
-unify :: Substitution -> UTerm -> UTerm -> Maybe Substitution
+applyAll :: Subst -> [UTerm] -> [UTerm]
+applyAll s ts =
+    case evalStateT (traverse apply ts) s of
+        Just ts -> ts
+        Nothing -> []
+
+unify :: Subst -> UTerm -> UTerm -> Maybe Subst
 unify s t t' = execStateT (go t t') s
     where
     go :: UTerm -> UTerm -> Unify UTerm

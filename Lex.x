@@ -20,7 +20,7 @@ tokens :-
     \(                          { \s -> OpenParen }
     \)                          { \s -> CloseParen }
     _                           { \s -> Variable "_" }
-    $upper [$alpha $digit]*     { \s -> Variable s }
+    $upper [$alpha $digit _]*   { \s -> Variable s }
     $alpha [$alpha $digit _]*   { \s -> Atom s }
 
 {
@@ -44,5 +44,5 @@ tokenize str = go ('\n', [], str)
             AlexSkip input len -> go input
             AlexToken input len act -> do
                 rest <- go input
-                return (act (take len str) : rest)
+                return $ act (take len str) : rest
 }

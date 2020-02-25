@@ -1,39 +1,56 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE RankNTypes #-}
+
 module Logic where
 
-import Data.Bifunctor
+import Control.Applicative
+import Control.Monad.Identity
+import Control.Monad.Trans
+import Control.Monad.State
 
-newtype LogicT m a = LogicT { unLogicT :: m (Maybe (a, LogicT m a)) }
+newtype LogicT m a =
+    LogicT { runLogicT :: forall r. (a -> m r -> m r) -> m r -> m r }
 
-instance Functor m => Functor (LogicT m) where
-    fmap f = LogicT . fmap (fmap (bimap f (fmap f))) . unLogicT
+observeT :: Applicative m => LogicT m a -> m [a]
+observeT x = runLogicT x (fmap . (:)) (pure [])
 
-instance Applicative m => Applicative (LogicT m) where
-    pure x = LogicT $ pure (Just (x, LogicT (pure Nothing)))
+type Logic = LogicT Identity
 
-    {-
-    LogicT f <*> x = LogicT $ (<*>) <$> g <*> unLogicT x
-        where
-        --g :: m (Maybe ((a, LogicT m a) -> (b, LogicT m b)))
-        g = fmap (fmap (bimap f _)) f
-    -}
+logic :: (forall r. (a -> r -> r) -> r -> r) -> Logic a
+logic f = LogicT $ \sk ->
+    Identity .
+    f (\sk' -> runIdentity . sk sk' . Identity) .
+    runIdentity
 
-    LogicT f <*> x = LogicT $ _
+runLogic :: Logic a -> (a -> r -> r) -> r -> r
+runLogic x sk fk = runIdentity $ runLogicT x (fmap . sk) (Identity fk)
 
-    {-
-    (<*>) (LogicT f) = (<*>) <$> LogicT $
-        \x -> case x of
-            Just (x, xs) -> _
-            Nothing      -> Nothing
-    -}
+observe :: Logic a -> [a]
+observe = runIdentity . observeT
 
-instance Monad m => Monad (LogicT m) where
-    LogicT x >>= f = undefined
+instance Functor (LogicT m) where
+    fmap f x = LogicT $ \sk fk -> runLogicT x (sk . f) fk
 
-observe :: Monad m => LogicT m a -> m [a]
-observe x = do
-    x <- unLogicT x
-    case x of
-        Just (x, xs) -> do
-            xs <- observe xs
-            return $ x : xs
-        Nothing -> return []
+instance Applicative (LogicT m) where
+    pure x  = LogicT $ \sk fk -> sk x fk
+    f <*> x = LogicT $ \sk fk ->
+        runLogicT f (\f fk -> runLogicT x (sk . f) fk) fk
+
+instance Monad (LogicT m) where
+    x >>= f = LogicT $ \sk fk ->
+        runLogicT x (\x fk -> runLogicT (f x) sk fk) fk
+
+instance Foldable Logic where
+    foldr f z x = runLogic x f z
+
+instance Traversable Logic where
+    traverse f x =
+        runLogic x (\x fk -> (<|>) . pure <$> f x <*> fk) (pure empty)
+
+instance Alternative (LogicT m) where
+    empty   = LogicT $ \sk fk -> fk
+    x <|> y = LogicT $ \sk fk ->
+        runLogicT x sk (runLogicT y sk fk)
+
+instance MonadTrans LogicT where
+    lift x = LogicT $ \sk fk -> x >>= \x -> sk x fk
