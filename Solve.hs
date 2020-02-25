@@ -3,30 +3,31 @@ module Solve where
 import Syntax
 import Unify
 
+import Control.Monad.Logic
 import Control.Monad.State
-import Data.List.NonEmpty
 import qualified Data.Map as M
 
-data Solve = Solve
+data Binding = Binding
   { rules :: [Clause]
   , subst :: Subst
   , local :: M.Map String Int
   , next  :: Int
   }
 
-unfreeze :: Int -> Clause -> NonEmpty UTerm
-unfreeze next (Clause t ts) = let
-    go :: Term -> State (M.Map String Int, Int) UTerm
-    go (Term t ts) = UTerm t <$> traverse go ts
-    go (Var v) = do
-      (s, i) <- get
-      case M.lookup v s of
-        Just v  -> return $ UVar v
-        Nothing -> do
-          modify $ \(s, i) -> (M.insert v i s, i + 1)
-          return $ UVar i
-  in evalState (do
-    t  <- go t
-    ts <- traverse go ts
-    return $ t :| ts
-  ) (M.empty, next)
+type Solve a = LogicT (State Binding) a
+
+unfreeze :: Term -> Solve UTerm
+unfreeze (Term t ts) = UTerm t <$> traverse unfreeze ts
+unfreeze (Var v) = do
+  s <- gets local
+  case M.lookup v s of
+    Just v  -> return $ UVar v
+    Nothing -> do
+      v' <- gets next
+      modify $ \s' -> s' { local = M.insert v v' s, next = v' + 1 }
+      return $ UVar v'
+
+type Solution = M.Map String Term
+
+solve :: [Clause] -> [Term] -> [Solution]
+solve rules ts = undefined

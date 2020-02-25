@@ -1,6 +1,8 @@
 ### Overview
 
-Currently, a simple parser for a subset of Prolog is implemented.
+- [x] Parser for a subset of Prolog is implemented.
+- [x] Unification for simple terms.
+- [ ] Solver.
 
 ### Useful Resources
 
