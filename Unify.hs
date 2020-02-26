@@ -1,4 +1,4 @@
-module Unify (Subst, UTerm(..), apply, empty, unify) where
+module Unify (Subst, UTerm(..), apply, bind, empty, unify) where
 
 import Control.Monad.State
 import qualified Data.IntMap as IM

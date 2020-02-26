@@ -4,6 +4,8 @@ import Syntax
 import Unify
 
 import Control.Monad.State
+import Data.Maybe
+import Data.Traversable
 import qualified Data.Map as M
 
 data Binding = Binding
@@ -56,10 +58,13 @@ solve cs ts = flip evalStateT (Binding empty M.empty 0) $ do
   s  <- gets local
   find cs ts
   s' <- gets subst
-  maybe (error "Solve.solve: unreachable") return . flip evalStateT s' $ do
-    s <- traverse (apply . UVar) s
-    s <- traverse apply $ flip M.mapWithKey s $ \v t ->
+  lift . maybeToList . flip evalStateT s' $ do
+    s <- M.toList <$> traverse (apply . UVar) s
+    s <- for s $ \(v, t) ->
       case t of
-        UVar _ -> UTerm v []
-        t      -> t
+        UVar v' -> do
+          t <- bind v' (UTerm v [])
+          return (v, t)
+        t -> return (v, t)
+    s <- traverse apply (M.fromList s)
     return $ M.map freeze s
