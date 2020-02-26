@@ -1,4 +1,4 @@
-module Solve (solve) where
+module Solve (Solution, solve) where
 
 import Syntax
 import Unify
@@ -50,13 +50,6 @@ branch cs t = do
 
 type Solution = M.Map String Term
 
-{-
-
-λ> a = Clause (Term "a" [Term "b" []]) []
-λ> solve [a] [Term "a" [Var "X"]]
-[fromList [("X",Term "b" [])]]
-
--}
 solve :: [Clause] -> [Term] -> [Solution]
 solve cs ts = flip evalStateT (Binding empty M.empty 0) $ do
   ts <- traverse unfreeze ts
