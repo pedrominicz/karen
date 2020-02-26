@@ -31,7 +31,9 @@ repl cs = do
         [] -> outputStrLn "no."
         ts -> case filter (not . M.null) ts of
           [] -> outputStrLn "yes."
-          ts -> void $ traverse (outputStrLn . (++ ".") . prettySolution) ts
+          ts -> do
+            traverse (outputStrLn . (++ ".") . prettySolution) (take 4 ts)
+            when (not . null $ drop 4 ts) $ outputStrLn "..."
       repl cs
     Nothing -> return ()
 
