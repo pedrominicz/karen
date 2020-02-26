@@ -20,7 +20,7 @@ no :- refl(a,b).
 
 test(cons(a,_)).
 
-zeros(0).
+zeros(zero).
 zeros(X) :- zeros(X).
 zeros(impossible).
 

@@ -2,7 +2,9 @@
 
 - [x] Parser for a subset of Prolog is implemented.
 - [x] Unification for simple terms.
-- [ ] Solver.
+- [x] Solver using the list monad for non-determinism.
+- [ ] Read-eval-print loop.
+- [ ] Test.
 
 ### Useful Resources
 
